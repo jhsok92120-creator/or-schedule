@@ -1591,10 +1591,6 @@ function renderSchedule(){
       let cellCls=hol?'holiday-col':sun?'sun-col':sat?'sat-col':'';
       const isLeave=(v==='leave');
       if(isLeave){html+=`<td class="leave-col ${cellCls}"><span class="cell-leave">휴</span></td>`;continue;}
-      if(v==='공'||v==='연'||v==='반'){
-        html+=`<td class="${cellCls}"><button class="cell-btn cell-${v}" onclick="cycleCell(${s.id},${d})" style="${warnStyle}">${v}</button></td>`;
-        continue;
-      }
       // 경고 스타일
       let warnStyle='';
       if(v==='C'&&((d>=3&&arr[d-2]==='C')||(d+2<=days&&arr[d+2]==='C')))warnStyle='outline:2px solid #e53e3e;outline-offset:-2px;border-radius:3px;';
@@ -1602,7 +1598,12 @@ function renderSchedule(){
       // 리퀘스트 진한색
       const reqVal=getRequestVal(s.id,curYear,curMonth,d);
       const reqStyle=(reqVal===v)?(v==='S'?'background:#1a4a2e;color:#fff;':v==='C'?'background:#7a4500;color:#fff;':v==='/'?'background:#2a2825;color:#fff;':''):'';
-      html+=`<td class="${cellCls}"><button class="cell-btn cell-${v}" onclick="cycleCell(${s.id},${d})" style="${warnStyle}${reqStyle}">${v}</button></td>`;
+      // 공가/연차/반차 처리 (warnStyle 선언 후)
+      if(v==='공'||v==='연'||v==='반'){
+        html+=`<td class="${cellCls}"><button class="cell-btn cell-${v}" onclick="cycleCell(${s.id},${d})">${v}</button></td>`;
+      } else {
+        html+=`<td class="${cellCls}"><button class="cell-btn cell-${v}" onclick="cycleCell(${s.id},${d})" style="${warnStyle}${reqStyle}">${v}</button></td>`;
+      }
     }
     html+=`<td style="font-weight:700;color:var(--accent);font-family:'DM Mono',monospace;font-size:12px;min-width:26px;text-align:center">${sc}</td>
       <td style="font-weight:700;color:var(--amber);font-family:'DM Mono',monospace;font-size:12px;min-width:26px;text-align:center">${cc}</td>
