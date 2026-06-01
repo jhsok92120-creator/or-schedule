@@ -314,6 +314,14 @@ input[type=checkbox]{width:auto}
   .scal-stat{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#1a1916}
   .scal-stat-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
   .scal-badge-rank{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:600;margin-left:4px}
+  .drag-handle{cursor:grab;color:var(--text3);font-size:22px;padding:6px 8px;flex-shrink:0;touch-action:none;user-select:none;-webkit-user-select:none;line-height:1}
+  .drag-handle:hover,.drag-handle:active{color:var(--accent)}
+  @media(max-width:1024px){
+    .btn-sm{padding:7px 14px;font-size:13px}
+    .staff-edit-btn{padding:5px 10px;font-size:13px}
+    .staff-card{padding:16px}
+    .staff-name{font-size:15px}
+  }
 </style>
 </head>
 <body>
@@ -853,6 +861,7 @@ function saveEditName(id){
 }
 function cancelEditName(id){renderStaff();}
 let dragSrcId=null;
+// 마우스 드래그
 function dragStart(e,id){dragSrcId=id;setTimeout(()=>e.currentTarget.classList.add('dragging'),0);e.dataTransfer.effectAllowed='move';}
 function dragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('drag-over');}
 function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
@@ -865,15 +874,68 @@ function dragDrop(e,targetId){
 }
 function dragEnd(){document.querySelectorAll('.staff-card').forEach(c=>c.classList.remove('dragging','drag-over'));}
 
+// 터치 드래그 (태블릿/모바일)
+let touchDragId=null, touchClone=null, touchOffX=0, touchOffY=0;
+function touchDragStart(e,id){
+  touchDragId=id;
+  const card=e.currentTarget.closest('.staff-card');
+  const rect=card.getBoundingClientRect();
+  const touch=e.touches[0];
+  touchOffX=touch.clientX-rect.left;
+  touchOffY=touch.clientY-rect.top;
+  // 드래그 클론 생성
+  touchClone=card.cloneNode(true);
+  touchClone.style.cssText=`position:fixed;z-index:9999;width:${rect.width}px;opacity:.85;pointer-events:none;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.2);left:${rect.left}px;top:${rect.top}px;background:var(--surface);border:2px solid var(--accent);`;
+  document.body.appendChild(touchClone);
+  card.classList.add('dragging');
+  e.preventDefault();
+}
+function touchDragMove(e){
+  if(!touchClone)return;
+  const touch=e.touches[0];
+  touchClone.style.left=(touch.clientX-touchOffX)+'px';
+  touchClone.style.top=(touch.clientY-touchOffY)+'px';
+  // 아래 카드 하이라이트
+  touchClone.style.display='none';
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);
+  touchClone.style.display='';
+  document.querySelectorAll('.staff-card').forEach(c=>c.classList.remove('drag-over'));
+  const targetCard=el&&el.closest('.staff-card');
+  if(targetCard&&!targetCard.classList.contains('dragging'))targetCard.classList.add('drag-over');
+  e.preventDefault();
+}
+function touchDragEnd(e){
+  if(!touchClone)return;
+  const touch=e.changedTouches[0];
+  touchClone.style.display='none';
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);
+  touchClone.style.display='';
+  const targetCard=el&&el.closest('.staff-card');
+  if(targetCard){
+    const targetIdStr=targetCard.getAttribute('data-staff-id');
+    const targetId=targetIdStr?+targetIdStr:null;
+    if(targetId&&targetId!==touchDragId){
+      const si=staff.findIndex(s=>s.id===touchDragId),ti=staff.findIndex(s=>s.id===targetId);
+      if(si>=0&&ti>=0){const[moved]=staff.splice(si,1);staff.splice(ti,0,moved);}
+    }
+  }
+  touchClone.remove();touchClone=null;touchDragId=null;
+  document.querySelectorAll('.staff-card').forEach(c=>c.classList.remove('dragging','drag-over'));
+  renderStaff();
+}
+
 function renderStaff(){
   const grid=document.getElementById('staff-grid'),empty=document.getElementById('staff-empty');
   if(!staff.length){grid.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
   grid.innerHTML=staff.map(s=>`
-    <div class="staff-card" draggable="true"
+    <div class="staff-card" draggable="true" data-staff-id="${s.id}"
       ondragstart="dragStart(event,${s.id})" ondragover="dragOver(event)"
       ondragleave="dragLeave(event)" ondrop="dragDrop(event,${s.id})" ondragend="dragEnd()">
-      <div class="drag-handle" title="드래그하여 순서 변경">⠿</div>
+      <div class="drag-handle" title="드래그하여 순서 변경"
+        ontouchstart="touchDragStart(event,${s.id})"
+        ontouchmove="touchDragMove(event)"
+        ontouchend="touchDragEnd(event)">⠿</div>
       <div class="staff-info" style="flex:1">
         <div id="staff-name-view-${s.id}" style="display:flex;align-items:center;gap:5px">
           <span class="staff-name">${s.name}</span>
@@ -1395,9 +1457,12 @@ function renderSchedule(){
     const wd=getDay(d),sat=isSat(d),sun=isSun(d),hol=holSet.has(d),fri=wd===5;
     let cls='';
     if(hol&&(sat||sun))cls='th-hol';else if(hol)cls='th-hol-weekday';else if(sun)cls='th-sun';else if(sat)cls='th-sat';
-    html+=`<th class="${cls}"><button class="date-btn" onclick="openDayPopup(${d},event)">${d}</button><br><span style="font-size:8px;font-weight:400">${DAY_KR[wd]}</span></th>`;
+    html+=`<th class="${cls}" onclick="openDayPopup(${d},event)" style="cursor:pointer" title="${d}일 당직 확인">
+      <span style="font-weight:700">${d}</span><br>
+      <span style="font-size:8px;font-weight:400">${DAY_KR[wd]}</span>
+    </th>`;
   }
-  html+=`<th style="background:var(--surface2)">S</th><th style="background:var(--surface2)">C</th><th style="background:var(--surface2)">/</th>
+  html+=`<th style="background:var(--surface2);min-width:32px;font-size:11px">S</th><th style="background:var(--surface2);min-width:32px;font-size:11px">C</th><th style="background:var(--surface2);min-width:32px;font-size:11px">/</th>
     <th class="wknd-col" style="display:none;background:#b8d4ff;color:#1a56b0;font-size:10px">토C</th>
     <th class="wknd-col" style="display:none;background:#ffb3b3;color:#8b0000;font-size:10px">일C</th>
     <th class="wknd-col" style="display:none;background:#e8f2eb;color:#1e4029;font-size:10px">주말OFF</th>
@@ -1435,9 +1500,9 @@ function renderSchedule(){
       const reqStyle=(reqVal===v)?(v==='S'?'background:#1a4a2e;color:#fff;':v==='C'?'background:#7a4500;color:#fff;':v==='/'?'background:#2a2825;color:#fff;':''):'';
       html+=`<td class="${cellCls}"><button class="cell-btn cell-${v}" onclick="cycleCell(${s.id},${d})" style="${warnStyle}${reqStyle}">${v}</button></td>`;
     }
-    html+=`<td style="font-weight:700;color:var(--accent);font-family:'DM Mono',monospace;font-size:12px">${sc}</td>
-      <td style="font-weight:700;color:var(--amber);font-family:'DM Mono',monospace;font-size:12px">${cc}</td>
-      <td style="font-weight:700;color:var(--text2);font-family:'DM Mono',monospace;font-size:12px">${oc}</td>
+    html+=`<td style="font-weight:700;color:var(--accent);font-family:'DM Mono',monospace;font-size:12px;min-width:32px;text-align:center">${sc}</td>
+      <td style="font-weight:700;color:var(--amber);font-family:'DM Mono',monospace;font-size:12px;min-width:32px;text-align:center">${cc}</td>
+      <td style="font-weight:700;color:var(--text2);font-family:'DM Mono',monospace;font-size:12px;min-width:32px;text-align:center">${oc}</td>
       <td class="wknd-col" style="display:none;font-weight:700;color:#1a56b0;font-family:'DM Mono',monospace;font-size:12px;background:#b8d4ff">${satC}</td>
       <td class="wknd-col" style="display:none;font-weight:700;color:#8b0000;font-family:'DM Mono',monospace;font-size:12px;background:#ffb3b3">${sunC}</td>
       <td class="wknd-col" style="display:none;font-weight:700;color:#1e4029;font-family:'DM Mono',monospace;font-size:12px;background:#e8f2eb">${wkndOff}</td>
@@ -1488,11 +1553,13 @@ function openDayPopup(d,event){
   const overlay=document.getElementById('day-popup-overlay'),box=document.getElementById('day-popup-box');
   overlay.style.display='block';
   if(event){
-    const rect=event.currentTarget.getBoundingClientRect();
-    const popW=220,popH=50+cMembers.length*34;
+    const target=event.currentTarget;
+    const rect=target.getBoundingClientRect();
+    const popW=220,popH=60+cMembers.length*34;
     let left=rect.left+rect.width/2-popW/2,top=rect.bottom+6;
     if(left+popW>window.innerWidth-10)left=window.innerWidth-popW-10;
-    if(left<10)left=10;if(top+popH>window.innerHeight-10)top=rect.top-popH-6;
+    if(left<10)left=10;
+    if(top+popH>window.innerHeight-10)top=rect.top-popH-6;
     box.style.left=left+'px';box.style.top=top+'px';
   }
 }
