@@ -390,10 +390,40 @@ input[type=checkbox]{width:auto}
     <p>OR Scheduling System</p>
   </div>
   <nav class="sidebar-nav">
+    <!-- 부서원 근무표 -->
+    <div class="nav-item" id="nav-view-tab" onclick="showPage('view')">
+      <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>부서원 근무표</span>
+    </div>
+    <!-- 부서원 근무표 -->
+<div id="page-view" class="page">
+  <div class="topbar">
+    <div class="month-nav" style="flex:1;margin:0">
+      <button class="btn btn-sm" onclick="viewChangeMonth(-1)"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <span class="month-label" id="view-month-label"></span>
+      <button class="btn btn-sm" onclick="viewChangeMonth(1)"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" onclick="exportViewPDF()">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>PDF
+      </button>
+      <button class="btn" onclick="exportViewExcel()">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>엑셀
+      </button>
+    </div>
+  </div>
+  <div style="padding:16px 20px">
+    <div id="view-notice" style="margin-bottom:8px"></div>
+    <div class="schedule-wrap" id="view-wrap">
+      <div class="empty"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>관리자가 근무표를 저장하면 여기에 표시됩니다</div>
+    </div>
+    <div id="view-note"></div>
+  </div>
+</div>
+
+<!-- 리퀘스트 -->
     <div class="nav-item" onclick="showPage('request')">
       <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg><span>리퀘스트</span>
     </div>
-
     <!-- 근무표 관리 그룹 -->
     <div class="nav-group-header" id="nav-group-hdr" onclick="toggleNavGroup()">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
@@ -405,7 +435,6 @@ input[type=checkbox]{width:auto}
       <div class="nav-item active" id="nav-staff-tab" onclick="handleGroupNav('staff')">
         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>직원 관리</span>
       </div>
-
       <div class="nav-item" id="nav-holiday" onclick="handleGroupNav('holiday')">
         <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg><span>공휴일 설정</span>
       </div>
@@ -416,7 +445,7 @@ input[type=checkbox]{width:auto}
         <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span>특별 상태</span>
       </div>
       <div class="nav-item" id="nav-schedule-tab" onclick="handleGroupNav('schedule')">
-        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>근무표</span>
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>관리자 근무표</span>
       </div>
       <div style="padding:4px 10px 6px">
         <button class="btn btn-sm" id="lock-toggle-btn" onclick="event.stopPropagation();toggleLock()" style="width:100%;font-size:11px;justify-content:center">
@@ -594,6 +623,9 @@ input[type=checkbox]{width:auto}
       <button class="btn btn-primary" onclick="generateSchedule()">
         <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>자동 생성
       </button>
+      <button class="btn btn-primary" onclick="saveToView()" style="background:#1a56b0;border-color:#1a56b0">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>부서원에 저장
+      </button>
       <button class="btn" onclick="exportCSV()">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV
       </button>
@@ -759,6 +791,9 @@ let userHolidays={};
 let leaveRecords=[]; let leaveNextId=1;
 let groupRules=[]; let groupNextId=1;
 let requests={};
+let savedSchedule={};  // 부서원에게 저장된 근무표
+let viewYear=new Date().getFullYear();
+let viewMonth=new Date().getMonth();
 let schedule={};
 let curYear=new Date().getFullYear();
 let curMonth=new Date().getMonth();
@@ -869,7 +904,7 @@ function toggleNavGroup(){
   const collapsed=body.classList.toggle('collapsed');
   hdr.classList.toggle('collapsed',collapsed);
 }
-const GROUP_NAV_IDS=['nav-staff-tab','nav-holiday','nav-group-tab','nav-leave-tab','nav-schedule-tab'];
+const GROUP_NAV_IDS=['nav-staff-tab','nav-holiday','nav-group-tab','nav-leave-tab','nav-schedule-tab'];  // 관리자 그룹
 const PAGE_TO_NAV={staff:'nav-staff-tab',holiday:'nav-holiday',group:'nav-group-tab',leave:'nav-leave-tab',schedule:'nav-schedule-tab'};
 function setActiveNav(id){
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
@@ -1970,6 +2005,155 @@ function printDutyModal(){
   </body></html>`);
   win.document.close();
   win.print();
+}
+
+/* ═══ 부서원 근무표 ═══ */
+function viewChangeMonth(dir){
+  viewMonth+=dir;
+  if(viewMonth>11){viewMonth=0;viewYear++;}
+  if(viewMonth<0){viewMonth=11;viewYear--;}
+  renderViewPage();
+}
+
+function saveToView(){
+  const key=`${curYear}-${curMonth}`;
+  if(!schedule[key]||!Object.keys(schedule[key]).length){
+    alert('근무표를 먼저 생성해주세요.');return;
+  }
+  // 깊은 복사로 저장
+  savedSchedule[key]=JSON.parse(JSON.stringify(schedule[key]));
+  viewYear=curYear; viewMonth=curMonth;
+  showNotice('success','✓ 부서원 근무표에 저장되었습니다!');
+}
+
+function renderViewPage(){
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const DAY_KR=['일','월','화','수','목','금','토'];
+  document.getElementById('view-month-label').textContent=`${viewYear}년 ${MONTHS[viewMonth]}`;
+  const key=`${viewYear}-${viewMonth}`;
+  const wrap=document.getElementById('view-wrap');
+  const holidays=getHolidaysForMonth(viewYear,viewMonth);
+  const holSet=new Set(holidays.map(h=>h.day));
+  const holMap={};holidays.forEach(h=>holMap[h.day]=h.name);
+  const days=getDays(viewYear,viewMonth);
+
+  if(!savedSchedule[key]||!Object.keys(savedSchedule[key]).length){
+    wrap.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>저장된 근무표가 없습니다</div>`;
+    return;
+  }
+
+  function wdV(d){return new Date(viewYear,viewMonth,d).getDay();}
+  function isSatV(d){return wdV(d)===6;}
+  function isSunV(d){return wdV(d)===0;}
+
+  let html=`<table class="schedule-table"><thead><tr><th class="name-th">이름</th>`;
+  for(let d=1;d<=days;d++){
+    const wd=wdV(d),sat=isSatV(d),sun=isSunV(d),hol=holSet.has(d);
+    let cls='';
+    if(hol&&(sat||sun))cls='th-hol';else if(hol)cls='th-hol-weekday';else if(sun)cls='th-sun';else if(sat)cls='th-sat';
+    html+=`<th class="${cls}"><span style="font-weight:700">${d}</span><br><span style="font-size:8px;font-weight:400">${DAY_KR[wd]}</span></th>`;
+  }
+  html+=`</tr></thead><tbody>`;
+
+  staff.forEach(s=>{
+    const arr=savedSchedule[key][s.id]||new Array(days+1).fill('S');
+    html+=`<tr><td class="name-td"><div style="font-size:12px;font-weight:600">${s.name}</div></td>`;
+    for(let d=1;d<=days;d++){
+      const v=arr[d]||'S';
+      const sat=isSatV(d),sun=isSunV(d),hol=holSet.has(d);
+      let cellCls=hol?'holiday-col':sun?'sun-col':sat?'sat-col':'';
+      if(v==='leave'){html+=`<td class="leave-col ${cellCls}"><span class="cell-leave">휴</span></td>`;continue;}
+      // 공/연/반도 표시
+      html+=`<td class="${cellCls}"><span class="cell-btn cell-${v}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;border-radius:3px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace">${v}</span></td>`;
+    }
+    html+=`</tr>`;
+  });
+
+  // 일별 현황
+  html+=`<tr style="background:var(--surface2)"><td class="name-td" style="font-size:10px;color:var(--text2);font-weight:600">일별</td>`;
+  for(let d=1;d<=days;d++){
+    const sN=staff.filter(s=>(savedSchedule[key][s.id]||[])[d]==='S').length;
+    const cN=staff.filter(s=>(savedSchedule[key][s.id]||[])[d]==='C').length;
+    const sat=isSatV(d),sun=isSunV(d),hol=holSet.has(d);
+    const bg=hol||sun?'#ffd6d6':sat?'#d6e8ff':'var(--surface2)';
+    html+=`<td style="font-size:9px;line-height:1.4;background:${bg};padding:2px 1px">
+      <span style="color:var(--accent);font-weight:600">S${sN}</span><br>
+      <span style="color:var(--amber);font-weight:600">C${cN}</span></td>`;
+  }
+  html+=`<td colspan="10" style="background:var(--surface2)"></td></tr></tbody></table>`;
+  wrap.innerHTML=html;
+
+  // 별첨
+  const noteEl=document.getElementById('view-note');
+  const leaveStaff=staff.filter(s=>getLeaveTypeForMonth(s.id,viewYear,viewMonth)!==null);
+  if(noteEl&&leaveStaff.length>0){
+    const items=leaveStaff.map(s=>{
+      const t=getLeaveTypeForMonth(s.id,viewYear,viewMonth);
+      const label=t==='parental'?'육아휴직':'병가';
+      const rec=leaveRecords.find(r=>r.staffId===s.id);
+      const period=rec?` (${rec.startYear}.${String(rec.startMonth+1).padStart(2,'0')}.${String(rec.startDay).padStart(2,'0')} ~ ${rec.endYear}.${String(rec.endMonth+1).padStart(2,'0')}.${String(rec.endDay).padStart(2,'0')})`:'' ;
+      return `• ${s.name} [${label}]${period}`;
+    }).join('  ');
+    noteEl.innerHTML=`<div style="margin-top:10px;padding:8px 14px;background:var(--surface2);border-radius:var(--radius);font-size:11px;color:var(--text2)">※ 별첨  ${items}</div>`;
+  } else if(noteEl){noteEl.innerHTML='';}
+}
+
+function exportViewPDF(){
+  const key=`${viewYear}-${viewMonth}`;
+  if(!savedSchedule[key]){alert('저장된 근무표가 없습니다.');return;}
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const win=window.open('','_blank');
+  const tableEl=document.getElementById('view-wrap').innerHTML;
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>${viewYear}년 ${MONTHS[viewMonth]} 근무표</title>
+  <style>
+    @page{size:A4 landscape;margin:10mm}
+    body{font-family:'Noto Sans KR',sans-serif;font-size:10px;margin:0}
+    h2{font-size:14px;margin-bottom:8px}
+    table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid #ddd;padding:3px 2px;text-align:center;font-size:9px}
+    th{background:#f5f5f5;font-weight:700}
+    .cell-S{background:#e8f2eb;color:#1e4029}
+    .cell-C{background:#fdf3e0;color:#7a5200}
+    .cell-off{background:#f0ede8;color:#5a5752}
+    .cell-공{background:#deeaff;color:#1a56b0}
+    .cell-연{background:#ede8f5;color:#6b3fa0}
+    .cell-반{background:#e8f8f2;color:#0f7a5a}
+    .sat-col{background:#d6e8ff}
+    .sun-col,.holiday-col{background:#ffd6d6}
+    .leave-col{background:#f5f0ff}
+    .name-td{text-align:center;font-weight:600;min-width:50px}
+    .name-th{min-width:50px}
+    .cell-btn{display:inline-block;width:20px;height:16px;border-radius:2px;font-size:9px;font-weight:700;line-height:16px}
+    .th-sat{background:#b8d4ff;color:#1a56b0}
+    .th-sun,.th-hol,.th-hol-weekday{background:#ffb3b3;color:#8b0000}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>
+  <h2>${viewYear}년 ${MONTHS[viewMonth]} 근무표</h2>
+  ${tableEl}
+  </body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(),500);
+}
+
+function exportViewExcel(){
+  const key=`${viewYear}-${viewMonth}`;
+  if(!savedSchedule[key]){alert('저장된 근무표가 없습니다.');return;}
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const days=getDays(viewYear,viewMonth);
+  let csv=`﻿이름,${Array.from({length:days},(_,i)=>i+1+'일').join(',')}
+`;
+  staff.forEach(s=>{
+    const arr=savedSchedule[key][s.id]||new Array(days+1).fill('S');
+    const cells=Array.from({length:days},(_,i)=>arr[i+1]||'S');
+    csv+=`${s.name},${cells.join(',')}
+`;
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`근무표_${viewYear}${String(viewMonth+1).padStart(2,'0')}.csv`;
+  a.click();URL.revokeObjectURL(url);
 }
 
 /* ═══ CSV ═══ */
