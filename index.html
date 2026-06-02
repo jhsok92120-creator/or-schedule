@@ -1627,7 +1627,7 @@ function renderSchedule(){
     const arr=schedule[key][s.id]||new Array(days+1).fill('/');
     const sc=arr.slice(1,days+1).filter(v=>v==='S').length;
     const cc=arr.slice(1,days+1).filter(v=>v==='C').length;
-    const oc=arr.slice(1,days+1).filter(v=>v==='/').length;
+    const oc=arr.slice(1,days+1).filter(v=>v==='/').length;  // 공/연/반 제외
     const satC=arr.slice(1,days+1).filter((v,i)=>v==='C'&&getDay(i+1)===6).length;
     const sunC=arr.slice(1,days+1).filter((v,i)=>v==='C'&&getDay(i+1)===0).length;
     let wkndOff=0;for(let d=1;d<=days;d++){if(getDay(d)===6&&d+1<=days&&getDay(d+1)===0){if(arr[d]==='/'&&arr[d+1]==='/')wkndOff++;}}
@@ -1689,7 +1689,7 @@ function renderSchedule(){
   for(let d=1;d<=days;d++){
     const sN=staff.filter(s=>(schedule[key][s.id]||[])[d]==='S').length;
     const cN=staff.filter(s=>(schedule[key][s.id]||[])[d]==='C').length;
-    const oN=staff.filter(s=>['/','공','연','반'].includes((schedule[key][s.id]||[])[d])).length;
+        const oN=staff.filter(s=>(schedule[key][s.id]||[])[d]==='/').length;
     const hol=holSet.has(d),sat=isSat(d),sun=isSun(d);
     const bg=hol?'#ffd6d6':sun?'var(--surface2)':sat?'var(--surface2)':'var(--surface2)';
     html+=`<td style="font-size:9px;line-height:1.4;background:${bg};padding:2px 1px">
@@ -2140,7 +2140,7 @@ function renderViewPage(){
   staff.forEach(s=>{
     const arr=savedSchedule[key][s.id]||new Array(days+1).fill('S');
     const cc_v=arr.slice(1,days+1).filter(v=>v==='C').length;
-    const oc_v=arr.slice(1,days+1).filter(v=>v==='/'||v==='공'||v==='연'||v==='반').length;
+    const oc_v=arr.slice(1,days+1).filter(v=>v==='/').length;
     html+=`<tr><td class="name-td"><div style="font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline dotted;text-decoration-color:var(--text3)" onclick="openStaffCalView(${s.id})" title="달력으로 보기">${s.name}</div></td>`;
     for(let d=1;d<=days;d++){
       const v=arr[d]||'S';
