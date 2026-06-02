@@ -407,15 +407,40 @@ input[type=checkbox]{width:auto}
   .prev-panel-toggle{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text2);white-space:nowrap;flex-shrink:0;align-self:flex-start;margin-bottom:8px}
   .prev-panel-toggle:hover{background:var(--surface2)}
   .prev-panel-toggle.active{background:var(--accent-light);color:var(--accent-text);border-color:#b8d9c2;font-weight:600}
-
-  
-  .prev-slide-table{border-collapse:collapse;width:100%}
-  .prev-slide-table th{padding:5px 2px;font-size:10px;font-weight:600;color:var(--text2);text-align:center;background:var(--surface2);border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;min-width:26px}
-  .prev-slide-table th.p-sat{background:#b8d4ff;color:#1a56b0}
-  .prev-slide-table th.p-sun{background:#ffb3b3;color:#8b0000}
-  .prev-slide-table td{padding:3px 1px;text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
-  .prev-slide-table td.p-sat{background:#d6e8ff}
-  .prev-slide-table td.p-sun{background:#ffd6d6}
+  /* 이전달 보기 팝업 */
+  .prev-popup{
+    position:fixed;bottom:20px;right:20px;
+    width:320px;
+    background:var(--surface);
+    border:1px solid var(--border2);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-md);
+    z-index:200;
+    display:none;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .prev-popup.open{display:flex}
+  .prev-popup-hdr{
+    padding:10px 14px;
+    background:var(--surface2);
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:8px;
+    flex-shrink:0;
+  }
+  .prev-popup-title{font-size:12px;font-weight:700;flex:1;color:var(--text2)}
+  .prev-popup-close{border:none;background:none;cursor:pointer;color:var(--text3);font-size:15px;padding:0 2px;line-height:1}
+  .prev-popup-close:hover{color:var(--text)}
+  .prev-popup-body{overflow-x:auto;max-height:400px;overflow-y:auto}
+  .prev-popup-table{border-collapse:collapse;width:100%}
+  .prev-popup-table th{padding:5px 3px;font-size:10px;font-weight:600;color:var(--text2);text-align:center;background:var(--surface2);border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap}
+  .prev-popup-table th.pp-name{min-width:60px;text-align:left;padding-left:8px}
+  .prev-popup-table th.pp-sat{background:#b8d4ff;color:#1a56b0}
+  .prev-popup-table th.pp-sun{background:#ffb3b3;color:#8b0000}
+  .prev-popup-table td{padding:3px 1px;text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+  .prev-popup-table td.pp-name{font-size:11px;font-weight:600;padding:3px 8px;text-align:left;background:var(--surface)}
+  .prev-popup-table td.pp-sat{background:#d6e8ff}
+  .prev-popup-table td.pp-sun{background:#ffd6d6}
 </style>
 </head>
 <body>
@@ -665,6 +690,9 @@ input[type=checkbox]{width:auto}
     </div>
     <div style="flex:1"></div>
     <div class="topbar-actions">
+      <button class="btn btn-sm" onclick="togglePrevPopup()" id="prev-popup-btn" style="font-size:11px">
+        이전달 보기
+      </button>
       <button class="btn" id="undo-btn" onclick="undoSchedule()" style="display:none">
         <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>이전 생성
       </button>
@@ -705,29 +733,9 @@ input[type=checkbox]{width:auto}
         <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="6 9 12 15 18 9"/></svg>토C·일C 보기
       </button>
     </div>
-    <div style="position:relative">
-      <!-- 이전달 슬라이드 탭 -->
-      <button id="prev-slide-tab" onclick="togglePrevPanel()"
-        style="position:absolute;left:-20px;top:80px;width:20px;height:56px;
-               background:#f0ede8;border:1px solid #ccc8c0;border-right:none;
-               border-radius:6px 0 0 6px;cursor:pointer;padding:0;
-               display:flex;align-items:center;justify-content:center;
-               box-shadow:-2px 0 4px rgba(0,0,0,.08);z-index:10">
-        <svg id="prev-tab-arrow" viewBox="0 0 24 24" style="width:11px;height:11px;stroke:#6b6760;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <!-- 이전달 패널 -->
-      <div id="prev-slide-panel"
-        style="position:absolute;right:100%;top:0;bottom:0;
-               width:0;overflow:hidden;
-               transition:width .25s ease;
-               background:#fff;border:1px solid #ccc8c0;border-right:2px solid #2d5a3d;
-               border-radius:8px 0 0 8px;z-index:9">
-        <div id="prev-slide-inner" style="width:180px"></div>
-      </div>
-      <div class="schedule-wrap" id="schedule-wrap">
+    <div class="schedule-wrap" id="schedule-wrap">
       <div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>자동 생성 버튼을 눌러주세요</div>
     </div><!-- schedule-wrap -->
-    </div><!-- relative wrap -->
     <div id="schedule-note"></div>
 
   </div>
@@ -751,6 +759,7 @@ input[type=checkbox]{width:auto}
       <button class="special-btn btn-yeon" onclick="calSetSpecial('연')" style="padding:3px 8px;font-size:10px">연차</button>
       <button class="special-btn btn-ban" onclick="calSetSpecial('반')" style="padding:3px 8px;font-size:10px">반차</button>
     </div>
+    <button class="btn btn-primary btn-sm" onclick="saveStaffCal()" style="font-size:12px;padding:5px 14px">저장</button>
     <button class="scal-close" onclick="closeStaffCal()">✕</button>
   </div>
   <div class="scal-body" id="scal-body"></div>
@@ -806,6 +815,17 @@ input[type=checkbox]{width:auto}
     <div class="day-popup-title" id="popup-title"></div>
     <div class="day-popup-sub" id="popup-sub"></div>
     <div class="day-popup-members" id="popup-members"></div>
+  </div>
+</div>
+
+<!-- 이전달 보기 팝업 -->
+<div class="prev-popup" id="prev-popup">
+  <div class="prev-popup-hdr">
+    <div class="prev-popup-title" id="prev-popup-title">이전달 마지막 4일</div>
+    <button class="prev-popup-close" onclick="togglePrevPopup()">✕</button>
+  </div>
+  <div class="prev-popup-body">
+    <div id="prev-popup-content"></div>
   </div>
 </div>
 
@@ -1969,6 +1989,14 @@ function openStaffCal(staffId){
 function closeStaffCal(){
   document.getElementById('staff-cal-modal').classList.remove('open');
   document.getElementById('staff-cal-backdrop').classList.remove('open');
+  calSpecialMode=null;
+}
+
+function saveStaffCal(){
+  renderSchedule();
+  saveToLS();
+  closeStaffCal();
+  showNotice('success','✓ 저장되었습니다');
 }
 
 let calSpecialMode=null; // null=일반순환, '공'/'연'/'반'=특별모드
@@ -2003,7 +2031,6 @@ function calCycleCell(d){
     schedule[key][calStaffId][d]=idx>=0?cycle[(idx+1)%3]:'S';
   }
   renderStaffCal();
-  saveToLS();
 }
 function staffCalMove(dir){
   calMonth+=dir;
@@ -2081,10 +2108,21 @@ function renderStaffCal(){
     const sN=vals.filter(v=>v==='S').length;
     const cN=vals.filter(v=>v==='C').length;
     const oN=vals.filter(v=>v==='/').length;
+    const gN=vals.filter(v=>v==='공').length;
+    const yN=vals.filter(v=>v==='연').length;
+    const bN=vals.filter(v=>v==='반').length;
+    const tOff=calcTargetOff(calYear,calMonth);
     html+=`<div class="scal-stats">
       <div class="scal-stat"><div class="scal-stat-dot" style="background:#1a4a2e"></div>주간 ${sN}일</div>
       <div class="scal-stat"><div class="scal-stat-dot" style="background:#7a4500"></div>당직 ${cN}일</div>
       <div class="scal-stat"><div class="scal-stat-dot" style="background:#2a2825"></div>휴무 ${oN}일</div>
+      ${gN?`<div class="scal-stat"><div class="scal-stat-dot" style="background:#1a56b0"></div>공가 ${gN}일</div>`:''}
+      ${yN?`<div class="scal-stat"><div class="scal-stat-dot" style="background:#6b3fa0"></div>연차 ${yN}일</div>`:''}
+      ${bN?`<div class="scal-stat"><div class="scal-stat-dot" style="background:#0f7a5a"></div>반차 ${bN}일</div>`:''}
+    </div>
+    <div style="font-size:11px;color:var(--text2);padding:6px 4px;border-top:1px solid var(--border);margin-top:4px">
+      목표 휴무 <strong style="color:var(--accent)">${tOff}일</strong> 중 
+      <strong style="color:${oN>=tOff?'#c0392b':'var(--accent)'}">${oN}일</strong> 사용
     </div>`;
   } else {
     html+=`<div style="text-align:center;color:#9e9b96;font-size:12px;padding:8px 0">이달 근무표가 아직 생성되지 않았습니다</div>`;
@@ -2540,21 +2578,892 @@ function openDayPopupView(d, event){
 }
 
 /* ═══ 이전달 슬라이딩 패널 ═══ */
-let prevPanelOpen=false;
 
-function togglePrevPanel(){
-  prevPanelOpen=!prevPanelOpen;
-  const panel=document.getElementById('prev-slide-panel');
-  const arrow=document.getElementById('prev-tab-arrow');
-  if(prevPanelOpen){
-    renderPrevPanel();
-    if(panel) panel.style.width='180px';
-    if(arrow) arrow.style.transform='rotate(180deg)';
-  } else {
-    if(panel) panel.style.width='0';
-    if(arrow) arrow.style.transform='';
+
+
+
+/* ═══ 저장 내역 ═══ */
+
+function toggleSaveSidebar(){
+  const sb=document.getElementById('save-sidebar');
+  sb.classList.toggle('open');
+  renderSnapshotList();
+}
+
+function saveSnapshot(){
+  const key=`${curYear}-${curMonth}`;
+  if(!schedule[key]||!Object.keys(schedule[key]).length){
+    alert('근무표를 먼저 생성해주세요.');return;
+  }
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const now=new Date();
+  const timeStr=`${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const existCount=snapshots.filter(s=>s.year===curYear&&s.month===curMonth).length;
+  snapshots.push({
+    id:snapshotNextId++,
+    title:`${curYear}년 ${MONTHS[curMonth]} v${existCount+1}`,
+    time:timeStr,
+    year:curYear,
+    month:curMonth,
+    data:JSON.parse(JSON.stringify(schedule[key]))
+  });
+  saveToLS();
+  renderSnapshotList();
+  // 사이드바 열기
+  document.getElementById('save-sidebar').classList.add('open');
+  showNotice('success','✓ 저장되었습니다!');
+}
+
+function loadSnapshot(id){
+  const snap=snapshots.find(s=>s.id===id);
+  if(!snap)return;
+  if(!confirm(`"${snap.title}" 을 불러오시겠습니까? 현재 근무표는 덮어씌워집니다.`))return;
+  const key=`${snap.year}-${snap.month}`;
+  // 현재 상태 히스토리에 저장
+  if(schedule[key]&&Object.keys(schedule[key]).length>0){
+    scheduleHistory[key]=JSON.parse(JSON.stringify(schedule[key]));
+    const undoBtn=document.getElementById('undo-btn');
+    if(undoBtn)undoBtn.style.display='inline-flex';
+  }
+  curYear=snap.year; curMonth=snap.month;
+  schedule[key]=JSON.parse(JSON.stringify(snap.data));
+  saveToLS();
+  renderSchedule();
+  showNotice('success',`✓ "${snap.title}" 불러오기 완료`);
+}
+
+function deleteSnapshot(id){
+  const snap=snapshots.find(s=>s.id===id);
+  if(!snap)return;
+  if(!confirm(`"${snap.title}" 을 삭제하시겠습니까?`))return;
+  snapshots=snapshots.filter(s=>s.id!==id);
+  saveToLS();
+  renderSnapshotList();
+}
+
+function renderSnapshotList(){
+  const body=document.getElementById('save-sidebar-body');
+  if(!body)return;
+  if(!snapshots.length){
+    body.innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">저장된 내역이 없습니다</div>';
+    return;
+  }
+  // 최신순 정렬
+  const sorted=[...snapshots].reverse();
+  body.innerHTML=sorted.map(s=>`
+    <div class="save-item">
+      <div class="save-item-title">${s.title}</div>
+      <div class="save-item-time">저장: ${s.time}</div>
+      <div class="save-item-btns">
+        <button class="btn btn-sm btn-primary" onclick="loadSnapshot(${s.id})" style="font-size:11px;padding:3px 10px">불러오기</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteSnapshot(${s.id})" style="font-size:11px;padding:3px 10px">삭제</button>
+      </div>
+    </div>`).join('');
+}
+
+function newSchedule(){
+  if(!confirm('현재 근무표를 초기화하시겠습니까? (저장된 내역은 유지됩니다)'))return;
+  const key=`${curYear}-${curMonth}`;
+  schedule[key]={};
+  const undoBtn=document.getElementById('undo-btn');
+  if(undoBtn)undoBtn.style.display='none';
+  renderSchedule();
+  saveToLS();
+  showNotice('success','✓ 근무표가 초기화되었습니다');
+}
+
+function showNotice(type,msg){
+  const icons={success:`<svg viewBox="0 0 24 24" style="stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg>`,warn:`<svg viewBox="0 0 24 24" style="stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`};
+  document.getElementById('schedule-notice').innerHTML=`<div class="notice notice-${type}">${icons[type]||''} ${msg}</div>`;
+  setTimeout(()=>{document.getElementById('schedule-notice').innerHTML='';},8000);
+}
+
+function cycleCell(sid,d){
+  const key=`${curYear}-${curMonth}`;
+  if(!schedule[key]||!schedule[key][sid])return;
+  const v=schedule[key][sid][d];
+  if(v==='leave')return;
+  // 공/연/반은 클릭하면 /로 변경
+  if(v==='공'||v==='연'||v==='반'){schedule[key][sid][d]='/';renderSchedule();return;}
+  schedule[key][sid][d]=SHIFTS[(SHIFTS.indexOf(v)+1)%3];
+  renderSchedule();
+  saveToLS();
+}
+
+function toggleWkndCols(){
+  const cols=document.querySelectorAll('.wknd-col');
+  const btn=document.getElementById('toggle-wknd-btn');
+  const isHidden=cols.length>0&&cols[0].style.display==='none';
+  cols.forEach(el=>{el.style.display=isHidden?'':'none';});
+  btn.innerHTML=isHidden
+    ?`<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="18 15 12 9 6 15"/></svg> 토C·일C 숨기기`
+    :`<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="6 9 12 15 18 9"/></svg> 토C·일C 보기`;
+}
+
+function renderSchedule(){
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const DAY_KR=['일','월','화','수','목','금','토'];
+  document.getElementById('month-label').textContent=`${curYear}년 ${MONTHS[curMonth]}`;
+  const tOff=calcTargetOff(curYear,curMonth);
+  const tOffEl=document.getElementById('target-off-num');
+  if(tOffEl) tOffEl.textContent=tOff;
+  const days=getDays(),key=`${curYear}-${curMonth}`;
+  const wrap=document.getElementById('schedule-wrap');
+  const holidays=getHolidaysForMonth(curYear,curMonth);
+  const holSet=new Set(holidays.map(h=>h.day));
+  const holMap={};holidays.forEach(h=>holMap[h.day]=h.name);
+
+  if(!schedule[key]||!Object.keys(schedule[key]).length){
+    wrap.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>자동 생성 버튼을 눌러주세요</div>`;return;
+  }
+
+
+
+  let html=`<table class="schedule-table"><thead><tr><th class="name-th">이름</th>`;
+
+
+  for(let d=1;d<=days;d++){
+    const wd=getDay(d),sat=isSat(d),sun=isSun(d),hol=holSet.has(d),fri=wd===5;
+    let cls='';
+    if(hol&&(sat||sun))cls='th-hol';else if(hol)cls='th-hol-weekday';else if(sun)cls='th-sun';else if(sat)cls='th-sat';
+    html+=`<th class="${cls}" onclick="openDayPopup(${d},event)" style="cursor:pointer" title="${d}일 당직 확인">
+      <span style="font-weight:700">${d}</span><br>
+      <span style="font-size:8px;font-weight:400">${DAY_KR[wd]}</span>
+    </th>`;
+  }
+  html+=`<th style="background:var(--surface2);min-width:26px;font-size:10px">S</th><th style="background:var(--surface2);min-width:26px;font-size:10px">C</th><th style="background:var(--surface2);min-width:32px;font-size:11px">/</th>
+    <th class="wknd-col" style="display:none;background:#b8d4ff;color:#1a56b0;font-size:10px">토C</th>
+    <th class="wknd-col" style="display:none;background:#ffb3b3;color:#8b0000;font-size:10px">일C</th>
+    <th class="wknd-col" style="display:none;background:#e8f2eb;color:#1e4029;font-size:10px">주말OFF</th>
+  </tr></thead><tbody>`;
+
+  staff.forEach(s=>{
+    const arr=schedule[key][s.id]||new Array(days+1).fill('/');
+    const sc=arr.slice(1,days+1).filter(v=>v==='S').length;
+    const cc=arr.slice(1,days+1).filter(v=>v==='C').length;
+    const oc=arr.slice(1,days+1).filter(v=>v==='/').length;  // 공/연/반 제외
+    const satC=arr.slice(1,days+1).filter((v,i)=>v==='C'&&getDay(i+1)===6).length;
+    const sunC=arr.slice(1,days+1).filter((v,i)=>v==='C'&&getDay(i+1)===0).length;
+    let wkndOff=0;for(let d=1;d<=days;d++){if(getDay(d)===6&&d+1<=days&&getDay(d+1)===0){if(arr[d]==='/'&&arr[d+1]==='/')wkndOff++;}}
+    const lType=getLeaveTypeForMonth(s.id,curYear,curMonth);
+    const lColor=lType?LEAVE_COLOR[lType]:{bg:'',fg:''};
+    // 연속근무 5일 이상
+    const consecWarn=new Set();let run=0,runStart=0;
+    for(let d=1;d<=days+1;d++){const v=d<=days?arr[d]:null;const isWork=(v==='S'||v==='C');if(isWork){if(run===0)runStart=d;run++;}else{if(run>=6)for(let k=runStart;k<d;k++)consecWarn.add(k);run=0;}}
+
+    html+=`<tr><td class="name-td">
+      <div style="font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline dotted;text-decoration-color:var(--text3)" onclick="openStaffCal(${s.id})" title="달력으로 보기">${s.name}</div>
+    </td>`;
+
+    for(let d=1;d<=days;d++){
+      const v=arr[d]||'/';
+      const hol=holSet.has(d),sat=isSat(d),sun=isSun(d);
+      let cellCls=hol?'holiday-col':sun?'sun-col':sat?'sat-col':'';
+      const isLeave=(v==='leave');
+      if(isLeave){html+=`<td class="leave-col ${cellCls}"><span class="cell-leave">휴</span></td>`;continue;}
+      // 경고 스타일
+      let warnStyle='';
+      if(v==='C'&&((d>=3&&arr[d-2]==='C')||(d+2<=days&&arr[d+2]==='C')))warnStyle='outline:2px solid #e53e3e;outline-offset:-2px;border-radius:3px;';
+      if(consecWarn.has(d)&&!warnStyle){
+          const prevIn=d>1&&consecWarn.has(d-1);
+          const nextIn=d<days&&consecWarn.has(d+1);
+          if(!prevIn&&nextIn)
+            // 시작: 위아래왼쪽 테두리, 오른쪽 없음
+            warnStyle='box-shadow:-2px 0 0 #1a56b0,0 -2px 0 #1a56b0,0 2px 0 #1a56b0;border-radius:4px 0 0 4px;background:#e8f0fe;';
+          else if(prevIn&&nextIn)
+            // 중간: 위아래만
+            warnStyle='box-shadow:0 -2px 0 #1a56b0,0 2px 0 #1a56b0;border-radius:0;background:#e8f0fe;';
+          else if(prevIn&&!nextIn)
+            // 끝: 위아래오른쪽
+            warnStyle='box-shadow:2px 0 0 #1a56b0,0 -2px 0 #1a56b0,0 2px 0 #1a56b0;border-radius:0 4px 4px 0;background:#e8f0fe;';
+          else
+            // 단독
+            warnStyle='box-shadow:0 0 0 2px #1a56b0;border-radius:4px;background:#e8f0fe;';
+        }
+      // 리퀘스트 진한색
+      const reqVal=getRequestVal(s.id,curYear,curMonth,d);
+      const reqStyle=(reqVal===v)?(v==='S'?'background:#1a4a2e;color:#fff;':v==='C'?'background:#7a4500;color:#fff;':v==='/'?'background:#2a2825;color:#fff;':''):'';
+      // 공가/연차/반차 처리 (warnStyle 선언 후)
+      if(v==='공'||v==='연'||v==='반'){
+        html+=`<td class="${cellCls}"><button class="cell-btn cell-${v}" onclick="cycleCell(${s.id},${d})">${v}</button></td>`;
+      } else {
+        html+=`<td class="${cellCls}"><button class="cell-btn cell-${v}" onclick="cycleCell(${s.id},${d})" style="${warnStyle}${reqStyle}">${v}</button></td>`;
+      }
+    }
+    html+=`<td style="font-weight:700;color:var(--accent);font-family:'DM Mono',monospace;font-size:12px;min-width:26px;text-align:center">${sc}</td>
+      <td style="font-weight:700;color:var(--amber);font-family:'DM Mono',monospace;font-size:12px;min-width:26px;text-align:center">${cc}</td>
+      <td style="font-weight:700;color:var(--text2);font-family:'DM Mono',monospace;font-size:12px;min-width:26px;text-align:center">${oc}</td>
+      <td class="wknd-col" style="display:none;font-weight:700;color:#1a56b0;font-family:'DM Mono',monospace;font-size:12px;background:#b8d4ff">${satC}</td>
+      <td class="wknd-col" style="display:none;font-weight:700;color:#8b0000;font-family:'DM Mono',monospace;font-size:12px;background:#ffb3b3">${sunC}</td>
+      <td class="wknd-col" style="display:none;font-weight:700;color:#1e4029;font-family:'DM Mono',monospace;font-size:12px;background:#e8f2eb">${wkndOff}</td>
+    </tr>`;
+  });
+
+  // 일별 현황
+  html+=`<tr style="background:var(--surface2)"><td class="name-td" style="background:var(--surface2);font-size:10px;color:var(--text2);font-weight:600;padding:3px 4px">일별</td>`;
+
+  for(let d=1;d<=days;d++){
+    const sN=staff.filter(s=>(schedule[key][s.id]||[])[d]==='S').length;
+    const cN=staff.filter(s=>(schedule[key][s.id]||[])[d]==='C').length;
+        const oN=staff.filter(s=>(schedule[key][s.id]||[])[d]==='/').length;
+    const hol=holSet.has(d),sat=isSat(d),sun=isSun(d);
+    const bg=hol?'#ffd6d6':sun?'var(--surface2)':sat?'var(--surface2)':'var(--surface2)';
+    html+=`<td style="font-size:9px;line-height:1.4;background:${bg};padding:2px 1px">
+      <span style="color:var(--accent);font-weight:600">S${sN}</span><br>
+      <span style="color:var(--amber);font-weight:600">C${cN}</span><br>
+      <span style="color:var(--text3)">/${oN}</span></td>`;
+  }
+  html+=`<td colspan="3" style="background:var(--surface2)"></td>
+    <td class="wknd-col" style="display:none;background:var(--surface2)"></td>
+    <td class="wknd-col" style="display:none;background:var(--surface2)"></td>
+    <td class="wknd-col" style="display:none;background:var(--surface2)"></td>
+  </tr></tbody></table>`;
+  wrap.innerHTML=html;
+
+
+  // 별첨: 육아휴직/병가 직원 표시
+  const leaveStaff=staff.filter(s=>getLeaveTypeForMonth(s.id,curYear,curMonth)!==null);
+  const noteEl=document.getElementById('schedule-note');
+  if(noteEl){
+    if(leaveStaff.length>0){
+      const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+      const items=leaveStaff.map(s=>{
+        const t=getLeaveTypeForMonth(s.id,curYear,curMonth);
+        const label=t==='parental'?'육아휴직':'병가';
+        // 해당 월의 기간 찾기
+        const rec=leaveRecords.find(r=>r.staffId===s.id&&getLeaveTypeForMonth(s.id,curYear,curMonth)===r.type);
+        const period=rec?` (${rec.startYear}.${String(rec.startMonth+1).padStart(2,'0')}.${String(rec.startDay).padStart(2,'0')} ~ ${rec.endYear}.${String(rec.endMonth+1).padStart(2,'0')}.${String(rec.endDay).padStart(2,'0')})`:'' ;
+        return `<span style="margin-right:14px">• ${s.name} <span style="color:#5a3d8a;font-weight:600">[${label}]</span>${period}</span>`;
+      }).join('');
+      noteEl.innerHTML=`<div style="margin-top:10px;padding:8px 14px;background:var(--surface2);border-radius:var(--radius);font-size:11px;color:var(--text2);line-height:2">
+        <span style="font-weight:700;color:var(--text);margin-right:8px">※ 별첨</span>${items}
+      </div>`;
+    } else {
+      noteEl.innerHTML='';
+    }
   }
 }
+
+/* ═══ DAY POPUP ═══ */
+function openDayPopup(d,event){
+  const key=`${curYear}-${curMonth}`;
+  if(!schedule[key]||!Object.keys(schedule[key]).length)return;
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const DAY_KR=['일','월','화','수','목','금','토'];
+  const wd=getDay(d);
+  const holidays=getHolidaysForMonth(curYear,curMonth);
+  const holMap={};holidays.forEach(h=>holMap[h.day]=h.name);
+  const cMembers=staff.filter(s=>schedule[key][s.id]&&schedule[key][s.id][d]==='C');
+  const sMembers=staff.filter(s=>schedule[key][s.id]&&schedule[key][s.id][d]==='S');
+  document.getElementById('popup-title').textContent=`${d}일 (${DAY_KR[wd]})${holMap[d]?' · '+holMap[d]:''}`;
+  document.getElementById('popup-sub').textContent=`당직 ${cMembers.length}명 · 주간 ${sMembers.length}명`;
+  const membersEl=document.getElementById('popup-members');
+  membersEl.innerHTML=cMembers.length===0
+    ?`<div style="color:var(--text3);font-size:11px;padding:4px 0">당직자 없음</div>`
+    :cMembers.map(s=>`<div class="day-popup-member">
+        <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:${RANK_BG[s.rank]};color:${RANK_FG[s.rank]};flex-shrink:0">${s.name[0]}</div>
+        <span>${s.name}</span><span style="margin-left:auto;font-size:13px">🔔</span>
+      </div>`).join('');
+  const overlay=document.getElementById('day-popup-overlay'),box=document.getElementById('day-popup-box');
+  overlay.style.display='block';
+  if(event){
+    const target=event.currentTarget;
+    const rect=target.getBoundingClientRect();
+    const popW=220,popH=60+cMembers.length*34;
+    let left=rect.left+rect.width/2-popW/2,top=rect.bottom+6;
+    if(left+popW>window.innerWidth-10)left=window.innerWidth-popW-10;
+    if(left<10)left=10;
+    if(top+popH>window.innerHeight-10)top=rect.top-popH-6;
+    box.style.left=left+'px';box.style.top=top+'px';
+  }
+}
+function closeDayPopup(e){if(!e||e.target===document.getElementById('day-popup-overlay'))document.getElementById('day-popup-overlay').style.display='none';}
+
+/* ═══ 직원 달력 팝업 ═══ */
+
+function openStaffCal(staffId){
+  calStaffId=staffId;
+  calYear=curYear; calMonth=curMonth;
+  const s=staff.find(x=>x.id===staffId);
+  if(!s)return;
+  document.getElementById('scal-name-title').innerHTML=
+    s.name+`<span class="scal-badge-rank" style="background:${RANK_BG[s.rank]};color:${RANK_FG[s.rank]}">${s.rank}</span>`;
+  document.getElementById('staff-cal-modal').classList.add('open');
+  document.getElementById('staff-cal-backdrop').classList.add('open');
+  renderStaffCal();
+}
+function closeStaffCal(){
+  document.getElementById('staff-cal-modal').classList.remove('open');
+  document.getElementById('staff-cal-backdrop').classList.remove('open');
+}
+
+
+function calSetSpecial(type){
+  calSpecialMode=calSpecialMode===type?null:type;
+  // 버튼 활성화 표시
+  document.querySelectorAll('.scal-header .special-btn').forEach(btn=>{
+    btn.style.opacity='0.5';btn.style.fontWeight='500';
+  });
+  if(calSpecialMode){
+    const idx={'공':0,'연':1,'반':2}[type];
+    const btns=document.querySelectorAll('.scal-header .special-btn');
+    if(btns[idx]){btns[idx].style.opacity='1';btns[idx].style.fontWeight='800';}
+  } else {
+    document.querySelectorAll('.scal-header .special-btn').forEach(btn=>{btn.style.opacity='1';});
+  }
+}
+
+function calCycleCell(d){
+  const key=`${calYear}-${calMonth}`;
+  if(!schedule[key]||!schedule[key][calStaffId])return;
+  const cur=schedule[key][calStaffId][d];
+  if(cur==='leave')return;
+  if(calSpecialMode){
+    // 특별 모드: 해당 타입 토글
+    schedule[key][calStaffId][d]=cur===calSpecialMode?'/':calSpecialMode;
+  } else {
+    // 일반 순환: S→C→/→S
+    const cycle=['S','C','/'];
+    const idx=cycle.indexOf(cur);
+    schedule[key][calStaffId][d]=idx>=0?cycle[(idx+1)%3]:'S';
+  }
+  renderStaffCal();
+  saveToLS();
+}
+function staffCalMove(dir){
+  calMonth+=dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderStaffCal();
+}
+function renderStaffCal(){
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const DAY_KR=['일','월','화','수','목','금','토'];
+  document.getElementById('scal-month-lbl').textContent=`${calYear}년 ${MONTHS[calMonth]}`;
+
+  const key=`${calYear}-${calMonth}`;
+  const sched=(schedule[key]&&schedule[key][calStaffId])||null;
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const firstWd=new Date(calYear,calMonth,1).getDay();
+  const todayD=new Date();
+  const hols=getHolidaysForMonth(calYear,calMonth);
+  const holSet=new Set(hols.map(h=>h.day));
+  const holMap={};hols.forEach(h=>holMap[h.day]=h.name);
+  function wdOf(d){return new Date(calYear,calMonth,d).getDay();}
+
+  let html=`<div class="scal-grid">`;
+  ['일','월','화','수','목','금','토'].forEach((d,i)=>{
+    html+=`<div class="scal-dh ${i===0?'sun':i===6?'sat':''}">${d}</div>`;
+  });
+
+  // 앞 빈칸
+  for(let i=0;i<firstWd;i++) html+=`<div class="scal-cell empty-cell"></div>`;
+
+  for(let d=1;d<=days;d++){
+    const wd=wdOf(d);
+    const isTod=(todayD.getFullYear()===calYear&&todayD.getMonth()===calMonth&&todayD.getDate()===d);
+    const isSatC=wd===6,isSunC=wd===0,isHol=holSet.has(d);
+    let cls='scal-cell';
+    if(isTod)cls+=' today-cell';
+    if(isHol||isSunC)cls+=' sun-cell';
+    else if(isSatC)cls+=' sat-cell';
+    const dnCls=isHol?'hol':isSunC?'sun':isSatC?'sat':'';
+    const holTip=holMap[d]?`<span style="font-size:8px;color:#c0392b;margin-left:2px">${holMap[d]}</span>`:'';
+
+    let badge='';
+    if(sched){
+      const v=sched[d];
+      const isSatDay=isSatC,isRedDay=isSunC||isHol;
+      const extraStyle=isSatDay?'border-color:#1a56b0;color:#1a56b0;':isRedDay?'border-color:#c0392b;color:#c0392b;':'';
+      const isLeaveCell=(v==='leave');
+      const clickable=!isLeaveCell?`onclick="calCycleCell(${d})" style="cursor:pointer;${extraStyle}"`:
+                                    `style="${extraStyle}"`;
+      if(v==='S')badge=`<div class="scal-badge sb-S" ${clickable}>S</div>`;
+      else if(v==='C')badge=`<div class="scal-badge sb-C" ${clickable}>C</div>`;
+      else if(v==='/')badge=`<div class="scal-badge sb-off" ${clickable}>/</div>`;
+      else if(v==='공')badge=`<div class="scal-badge sb-S" style="background:#deeaff;color:#1a56b0;border-color:#1a56b0;cursor:pointer" onclick="calCycleCell(${d})">공</div>`;
+      else if(v==='연')badge=`<div class="scal-badge sb-S" style="background:#ede8f5;color:#6b3fa0;border-color:#6b3fa0;cursor:pointer" onclick="calCycleCell(${d})">연</div>`;
+      else if(v==='반')badge=`<div class="scal-badge sb-S" style="background:#e8f8f2;color:#0f7a5a;border-color:#0f7a5a;cursor:pointer" onclick="calCycleCell(${d})">반</div>`;
+      else if(v==='leave')badge=`<div class="scal-badge sb-leave">휴직</div>`;
+      else badge=`<div class="scal-badge sb-none" onclick="calCycleCell(${d})" style="cursor:pointer">-</div>`;
+    } else {
+      badge=`<div class="scal-badge sb-none">-</div>`;
+    }
+    html+=`<div class="${cls}">
+      <div class="scal-dn ${dnCls}">${d}${holTip}</div>
+      ${badge}
+    </div>`;
+  }
+
+  // 뒤 빈칸
+  const rem=(7-((firstWd+days)%7))%7;
+  for(let i=0;i<rem;i++) html+=`<div class="scal-cell empty-cell"></div>`;
+  html+=`</div>`;
+
+  // 통계
+  if(sched){
+    const vals=Array.from({length:days},(_,i)=>sched[i+1]||'');
+    const sN=vals.filter(v=>v==='S').length;
+    const cN=vals.filter(v=>v==='C').length;
+    const oN=vals.filter(v=>v==='/').length;
+    html+=`<div class="scal-stats">
+      <div class="scal-stat"><div class="scal-stat-dot" style="background:#1a4a2e"></div>주간 ${sN}일</div>
+      <div class="scal-stat"><div class="scal-stat-dot" style="background:#7a4500"></div>당직 ${cN}일</div>
+      <div class="scal-stat"><div class="scal-stat-dot" style="background:#2a2825"></div>휴무 ${oN}일</div>
+    </div>`;
+  } else {
+    html+=`<div style="text-align:center;color:#9e9b96;font-size:12px;padding:8px 0">이달 근무표가 아직 생성되지 않았습니다</div>`;
+  }
+  document.getElementById('scal-body').innerHTML=html;
+}
+
+/* ═══ 공가/연차/반차 ═══ */
+
+function openSpecialModal(type){
+  const key=`${curYear}-${curMonth}`;
+  if(!schedule[key]||!Object.keys(schedule[key]).length){
+    alert('근무표를 먼저 생성해주세요.');return;
+  }
+  specialType=type;
+  specialSelectedStaff=new Set();
+  specialSelectedDates=new Set();
+  document.getElementById('special-modal-title').textContent=type+' 입력';
+  document.getElementById('special-modal-overlay').style.display='flex';
+  renderSpecialStaff();
+  renderSpecialDates();
+}
+function closeSpecialModal(){
+  document.getElementById('special-modal-overlay').style.display='none';
+}
+function renderSpecialStaff(){
+  const grid=document.getElementById('special-staff-grid');
+  const activeStaff=staff.filter(s=>!onLeaveCheck(s.id));
+  grid.innerHTML=activeStaff.map(s=>`
+    <div class="special-staff-item${specialSelectedStaff.has(s.id)?' selected':''}"
+      onclick="toggleSpecialStaff(${s.id})">
+      ${s.name}
+    </div>`).join('');
+  updateSpecialCount();
+}
+function onLeaveCheck(sid){
+  return getLeaveTypeForMonth(sid,curYear,curMonth)!==null;
+}
+function toggleSpecialStaff(id){
+  if(specialSelectedStaff.has(id))specialSelectedStaff.delete(id);
+  else specialSelectedStaff.add(id);
+  renderSpecialStaff();
+}
+function specialSelectAllStaff(){
+  staff.filter(s=>!onLeaveCheck(s.id)).forEach(s=>specialSelectedStaff.add(s.id));
+  renderSpecialStaff();
+}
+function specialClearStaff(){
+  specialSelectedStaff.clear();
+  renderSpecialStaff();
+}
+function renderSpecialDates(){
+  const DAY_KR=['일','월','화','수','목','금','토'];
+  const days=getDays();
+  const holidays=getHolidaysForMonth(curYear,curMonth);
+  const holSet=new Set(holidays.map(h=>h.day));
+  function wdOf(d){return new Date(curYear,curMonth,d).getDay();}
+  const firstWd=new Date(curYear,curMonth,1).getDay();
+
+  let html='';
+  // 요일 헤더
+  ['일','월','화','수','목','금','토'].forEach((d,i)=>{
+    html+=`<div class="special-date-hdr ${i===0?'sun':i===6?'sat':''}">${d}</div>`;
+  });
+  // 빈칸
+  for(let i=0;i<firstWd;i++) html+=`<div class="special-date-btn empty"></div>`;
+  // 날짜
+  for(let d=1;d<=days;d++){
+    const wd=wdOf(d);
+    const isSat=wd===6,isSun=wd===0,isHol=holSet.has(d);
+    const cls=(isSun||isHol)?'sun':isSat?'sat':'';
+    const sel=specialSelectedDates.has(d)?'selected':'';
+    html+=`<div class="special-date-btn ${cls} ${sel}" onclick="toggleSpecialDate(${d})">${d}</div>`;
+  }
+  // 나머지 빈칸
+  const rem=(7-((firstWd+days)%7))%7;
+  for(let i=0;i<rem;i++) html+=`<div class="special-date-btn empty"></div>`;
+
+  document.getElementById('special-date-grid').innerHTML=html;
+  updateSpecialCount();
+}
+function toggleSpecialDate(d){
+  if(specialSelectedDates.has(d))specialSelectedDates.delete(d);
+  else specialSelectedDates.add(d);
+  renderSpecialDates();
+}
+function updateSpecialCount(){
+  const sc=document.getElementById('special-staff-count');
+  const dc=document.getElementById('special-date-count');
+  if(sc) sc.textContent=specialSelectedStaff.size?`(${specialSelectedStaff.size}명 선택)`:'';
+  if(dc) dc.textContent=specialSelectedDates.size?`(${specialSelectedDates.size}일 선택)`:'';
+}
+function applySpecial(){
+  if(!specialSelectedStaff.size){alert('직원을 선택해주세요.');return;}
+  if(!specialSelectedDates.size){alert('날짜를 선택해주세요.');return;}
+  const key=`${curYear}-${curMonth}`;
+  const val=specialType==='공가'?'공':specialType==='연차'?'연':'반';
+  // schedule이 없으면 초기화
+  if(!schedule[key]) schedule[key]={};
+  let appliedCount=0;
+  specialSelectedStaff.forEach(sid=>{
+    // sid가 숫자인지 확인
+    const numSid=Number(sid);
+    if(!schedule[key][numSid]) return;
+    specialSelectedDates.forEach(d=>{
+      // d를 숫자로 변환
+      const numD=Number(d);
+      if(numD>=1){
+        schedule[key][numSid][numD]=val;
+        appliedCount++;
+      }
+    });
+  });
+  closeSpecialModal();
+  renderSchedule();
+  saveToLS();
+  showNotice('success',`${specialType} 적용 완료 — ${specialSelectedStaff.size}명 × ${specialSelectedDates.size}일 (${appliedCount}셀)`);
+}
+
+/* ═══ 당직 모아보기 ═══ */
+function openDutyModal(){
+  const key=`${curYear}-${curMonth}`;
+  if(!schedule[key]||!Object.keys(schedule[key]).length){
+    alert('근무표를 먼저 생성해주세요.');return;
+  }
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const DAY_KR=['일','월','화','수','목','금','토'];
+  const days=getDays();
+  const holidays=getHolidaysForMonth(curYear,curMonth);
+  const holSet=new Set(holidays.map(h=>h.day));
+  const holMap={};holidays.forEach(h=>holMap[h.day]=h.name);
+  function wdOf(d){return new Date(curYear,curMonth,d).getDay();}
+
+  document.getElementById('duty-modal-title').textContent=`📋 ${curYear}년 ${MONTHS[curMonth]} 당직표`;
+
+  let html='';
+  for(let d=1;d<=days;d++){
+    const wd=wdOf(d);
+    const isSat=wd===6,isSun=wd===0,isHol=holSet.has(d);
+    // 당직자 수집
+    const cMembers=staff.filter(s=>schedule[key][s.id]&&schedule[key][s.id][d]==='C');
+    // C가 없는 평일은 스킵 (주말/공휴일은 항상 표시)
+    if(cMembers.length===0&&!isSat&&!isSun&&!isHol) continue;
+
+    const rowCls=isHol||isSun?'sun-row':isSat?'sat-row':'';
+    const dateCls=isHol||isSun?'sun':isSat?'sat':'';
+    const holName=holMap[d]?` <span style="font-size:10px;opacity:.7">${holMap[d]}</span>`:'';
+
+    const membersHtml=cMembers.length>0
+      ? cMembers.map(s=>`<span class="duty-member-chip">${s.name}</span>`).join('')
+      : `<span class="duty-empty">당직자 없음</span>`;
+
+    html+=`<div class="duty-row ${rowCls}">
+      <div class="duty-date ${dateCls}">${d}일 (${DAY_KR[wd]})${holName}</div>
+      <div class="duty-members">${membersHtml}</div>
+    </div>`;
+  }
+
+  document.getElementById('duty-modal-body').innerHTML=html;
+  document.getElementById('duty-modal-overlay').style.display='flex';
+}
+function closeDutyModal(){
+  document.getElementById('duty-modal-overlay').style.display='none';
+}
+function printDutyModal(){
+  const body=document.getElementById('duty-modal-body').innerHTML;
+  const title=document.getElementById('duty-modal-title').textContent;
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+  <style>
+    body{font-family:'Noto Sans KR',sans-serif;padding:20px;font-size:13px}
+    h2{margin-bottom:16px}
+    .row{display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid #eee}
+    .date{min-width:80px;font-weight:700;color:#555}
+    .sat .date{color:#1a56b0} .sun .date,.hol .date{color:#c0392b}
+    .sat{background:#f0f6ff} .sun,.hol{background:#fff0f0}
+    .chip{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#fdf3e0;color:#7a5200;border:1px solid #e8d4a0;margin:2px}
+  </style></head><body>
+  <h2>${title}</h2>
+  ${body.replace(/class="duty-row/g,'class="row').replace(/class="duty-date/g,'class="date').replace(/class="duty-members"/g,'class="members"').replace(/class="duty-member-chip"/g,'class="chip"')}
+  </body></html>`);
+  win.document.close();
+  win.print();
+}
+
+/* ═══ 부서원 근무표 ═══ */
+function viewChangeMonth(dir){
+  viewMonth+=dir;
+  if(viewMonth>11){viewMonth=0;viewYear++;}
+  if(viewMonth<0){viewMonth=11;viewYear--;}
+  renderViewPage();
+}
+
+function saveToView(){
+  const key=`${curYear}-${curMonth}`;
+  if(!schedule[key]||!Object.keys(schedule[key]).length){
+    alert('근무표를 먼저 생성해주세요.');return;
+  }
+  // 깊은 복사로 저장
+  savedSchedule[key]=JSON.parse(JSON.stringify(schedule[key]));
+  viewYear=curYear; viewMonth=curMonth;
+  saveToLS();
+  showNotice('success','✓ 부서원 근무표에 저장되었습니다!');
+}
+
+function renderViewPage(){
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const DAY_KR=['일','월','화','수','목','금','토'];
+  document.getElementById('view-month-label').textContent=`${viewYear}년 ${MONTHS[viewMonth]}`;
+  const key=`${viewYear}-${viewMonth}`;
+  const wrap=document.getElementById('view-wrap');
+  const holidays=getHolidaysForMonth(viewYear,viewMonth);
+  const holSet=new Set(holidays.map(h=>h.day));
+  const holMap={};holidays.forEach(h=>holMap[h.day]=h.name);
+  const days=getDays(viewYear,viewMonth);
+
+  if(!savedSchedule[key]||!Object.keys(savedSchedule[key]).length){
+    wrap.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>저장된 근무표가 없습니다</div>`;
+    return;
+  }
+
+  function wdV(d){return new Date(viewYear,viewMonth,d).getDay();}
+  function isSatV(d){return wdV(d)===6;}
+  function isSunV(d){return wdV(d)===0;}
+
+  let html=`<table class="schedule-table"><thead><tr><th class="name-th">이름</th>`;
+  for(let d=1;d<=days;d++){
+    const wd=wdV(d),sat=isSatV(d),sun=isSunV(d),hol=holSet.has(d);
+    let cls='';
+    if(hol&&(sat||sun))cls='th-hol';else if(hol)cls='th-hol-weekday';else if(sun)cls='th-sun';else if(sat)cls='th-sat';
+    html+=`<th class="${cls}" onclick="openDayPopupView(${d},event)" style="cursor:pointer" title="${d}일 당직 확인">
+      <span style="font-weight:700">${d}</span><br>
+      <span style="font-size:8px;font-weight:400">${DAY_KR[wd]}</span>
+    </th>`;
+  }
+  html+=`<th style="background:var(--surface2);min-width:26px;font-size:10px">C</th>
+    <th style="background:var(--surface2);min-width:26px;font-size:10px">/</th>
+  </tr></thead><tbody>`;
+
+  staff.forEach(s=>{
+    const arr=savedSchedule[key][s.id]||new Array(days+1).fill('S');
+    const cc_v=arr.slice(1,days+1).filter(v=>v==='C').length;
+    const oc_v=arr.slice(1,days+1).filter(v=>v==='/').length;
+    html+=`<tr><td class="name-td"><div style="font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline dotted;text-decoration-color:var(--text3)" onclick="openStaffCalView(${s.id})" title="달력으로 보기">${s.name}</div></td>`;
+    for(let d=1;d<=days;d++){
+      const v=arr[d]||'S';
+      const sat=isSatV(d),sun=isSunV(d),hol=holSet.has(d);
+      let cellCls=hol?'holiday-col':sun?'sun-col':sat?'sat-col':'';
+      if(v==='leave'){html+=`<td class="leave-col ${cellCls}"><span class="cell-leave">휴</span></td>`;continue;}
+      html+=`<td class="${cellCls}"><span class="cell-btn cell-${v}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;border-radius:3px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace">${v}</span></td>`;
+    }
+    html+=`<td style="font-weight:700;color:var(--amber);font-family:'DM Mono',monospace;font-size:12px;min-width:26px;text-align:center">${cc_v}</td>
+      <td style="font-weight:700;color:var(--text2);font-family:'DM Mono',monospace;font-size:12px;min-width:26px;text-align:center">${oc_v}</td>
+    </tr>`;
+  });
+
+  // 일별 현황
+  html+=`<tr style="background:var(--surface2)"><td class="name-td" style="font-size:10px;color:var(--text2);font-weight:600">일별</td>`;
+  for(let d=1;d<=days;d++){
+    const sN=staff.filter(s=>(savedSchedule[key][s.id]||[])[d]==='S').length;
+    const cN=staff.filter(s=>(savedSchedule[key][s.id]||[])[d]==='C').length;
+    const sat=isSatV(d),sun=isSunV(d),hol=holSet.has(d);
+    const bg=hol||sun?'#ffd6d6':sat?'#d6e8ff':'var(--surface2)';
+    html+=`<td style="font-size:9px;line-height:1.4;background:${bg};padding:2px 1px">
+      <span style="color:var(--accent);font-weight:600">S${sN}</span><br>
+      <span style="color:var(--amber);font-weight:600">C${cN}</span></td>`;
+  }
+  html+=`<td colspan="12" style="background:var(--surface2)"></td></tr></tbody></table>`;
+  wrap.innerHTML=html;
+
+  // 별첨
+  const noteEl=document.getElementById('view-note');
+  const leaveStaff=staff.filter(s=>getLeaveTypeForMonth(s.id,viewYear,viewMonth)!==null);
+  if(noteEl&&leaveStaff.length>0){
+    const items=leaveStaff.map(s=>{
+      const t=getLeaveTypeForMonth(s.id,viewYear,viewMonth);
+      const label=t==='parental'?'육아휴직':'병가';
+      const rec=leaveRecords.find(r=>r.staffId===s.id);
+      const period=rec?` (${rec.startYear}.${String(rec.startMonth+1).padStart(2,'0')}.${String(rec.startDay).padStart(2,'0')} ~ ${rec.endYear}.${String(rec.endMonth+1).padStart(2,'0')}.${String(rec.endDay).padStart(2,'0')})`:'' ;
+      return `• ${s.name} [${label}]${period}`;
+    }).join('  ');
+    noteEl.innerHTML=`<div style="margin-top:10px;padding:8px 14px;background:var(--surface2);border-radius:var(--radius);font-size:11px;color:var(--text2)">※ 별첨  ${items}</div>`;
+  } else if(noteEl){noteEl.innerHTML='';}
+}
+
+function exportViewPDF(){
+  const key=`${viewYear}-${viewMonth}`;
+  if(!savedSchedule[key]){alert('저장된 근무표가 없습니다.');return;}
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const win=window.open('','_blank');
+  const tableEl=document.getElementById('view-wrap').innerHTML;
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>${viewYear}년 ${MONTHS[viewMonth]} 근무표</title>
+  <style>
+    @page{size:A4 landscape;margin:10mm}
+    body{font-family:'Noto Sans KR',sans-serif;font-size:10px;margin:0}
+    h2{font-size:14px;margin-bottom:8px}
+    table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid #ddd;padding:3px 2px;text-align:center;font-size:9px}
+    th{background:#f5f5f5;font-weight:700}
+    .cell-S{background:#e8f2eb;color:#1e4029}
+    .cell-C{background:#fdf3e0;color:#7a5200}
+    .cell-off{background:#f0ede8;color:#5a5752}
+    .cell-공{background:#deeaff;color:#1a56b0}
+    .cell-연{background:#ede8f5;color:#6b3fa0}
+    .cell-반{background:#e8f8f2;color:#0f7a5a}
+    .sat-col{background:#d6e8ff}
+    .sun-col,.holiday-col{background:#ffd6d6}
+    .leave-col{background:#f5f0ff}
+    .name-td{text-align:center;font-weight:600;min-width:50px}
+    .name-th{min-width:50px}
+    .cell-btn{display:inline-block;width:20px;height:16px;border-radius:2px;font-size:9px;font-weight:700;line-height:16px}
+    .th-sat{background:#b8d4ff;color:#1a56b0}
+    .th-sun,.th-hol,.th-hol-weekday{background:#ffb3b3;color:#8b0000}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>
+  <h2>${viewYear}년 ${MONTHS[viewMonth]} 근무표</h2>
+  ${tableEl}
+  </body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(),500);
+}
+
+function exportViewExcel(){
+  const key=`${viewYear}-${viewMonth}`;
+  if(!savedSchedule[key]){alert('저장된 근무표가 없습니다.');return;}
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const days=getDays(viewYear,viewMonth);
+  let csv=`﻿이름,${Array.from({length:days},(_,i)=>i+1+'일').join(',')}
+`;
+  staff.forEach(s=>{
+    const arr=savedSchedule[key][s.id]||new Array(days+1).fill('S');
+    const cells=Array.from({length:days},(_,i)=>arr[i+1]||'S');
+    csv+=`${s.name},${cells.join(',')}
+`;
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`근무표_${viewYear}${String(viewMonth+1).padStart(2,'0')}.csv`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+/* ═══ 부서원 근무표 팝업 ═══ */
+function openStaffCalView(staffId){
+  // savedSchedule 기준으로 달력 표시
+  const origSched=schedule;
+  // 임시로 savedSchedule을 schedule처럼 사용
+  const tempKey=`${viewYear}-${viewMonth}`;
+  if(!savedSchedule[tempKey]){alert('저장된 근무표가 없습니다.');return;}
+  // calStaffId, calYear, calMonth 설정 후 openStaffCal 활용
+  calStaffId=staffId;
+  calYear=viewYear;
+  calMonth=viewMonth;
+  const s=staff.find(x=>x.id===staffId);
+  document.getElementById('scal-name-title').innerHTML=
+    s?s.name+'<span class="scal-badge-rank" style="background:'+RANK_BG[s.rank]+';color:'+RANK_FG[s.rank]+'">'+s.rank+'</span>':'';
+  document.getElementById('staff-cal-modal').classList.add('open');
+  document.getElementById('staff-cal-backdrop').classList.add('open');
+  renderStaffCalFromSaved();
+}
+
+function renderStaffCalFromSaved(){
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const DAY_KR=['일','월','화','수','목','금','토'];
+  document.getElementById('scal-month-lbl').textContent=`${calYear}년 ${MONTHS[calMonth]}`;
+  const key=`${calYear}-${calMonth}`;
+  const sched=(savedSchedule[key]&&savedSchedule[key][calStaffId])||null;
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const firstWd=new Date(calYear,calMonth,1).getDay();
+  const todayD=new Date();
+  const hols=getHolidaysForMonth(calYear,calMonth);
+  const holSet=new Set(hols.map(h=>h.day));
+  const holMap={};hols.forEach(h=>holMap[h.day]=h.name);
+  function wdOf(d){return new Date(calYear,calMonth,d).getDay();}
+
+  let html=`<div class="scal-grid">`;
+  ['일','월','화','수','목','금','토'].forEach((d,i)=>{
+    html+=`<div class="scal-dh ${i===0?'sun':i===6?'sat':''}">${d}</div>`;
+  });
+  for(let i=0;i<firstWd;i++) html+=`<div class="scal-cell empty-cell"></div>`;
+  for(let d=1;d<=days;d++){
+    const wd=wdOf(d);
+    const isTod=(todayD.getFullYear()===calYear&&todayD.getMonth()===calMonth&&todayD.getDate()===d);
+    const isSatC=wd===6,isSunC=wd===0,isHol=holSet.has(d);
+    let cls='scal-cell';
+    if(isTod)cls+=' today-cell';
+    if(isHol||isSunC)cls+=' sun-cell';else if(isSatC)cls+=' sat-cell';
+    const dnCls=isHol?'hol':isSunC?'sun':isSatC?'sat':'';
+    const holTip=holMap[d]?`<span style="font-size:8px;color:#c0392b;margin-left:2px">${holMap[d]}</span>`:'';
+    let badge='';
+    if(sched){
+      const v=sched[d];
+      const isSatDay=isSatC,isRedDay=isSunC||isHol;
+      const extra=isSatDay?'border-color:#1a56b0;color:#1a56b0;':isRedDay?'border-color:#c0392b;color:#c0392b;':'';
+      if(v==='S')badge=`<div class="scal-badge sb-S" style="${extra}">S</div>`;
+      else if(v==='C')badge=`<div class="scal-badge sb-C" style="${extra}">C</div>`;
+      else if(v==='/')badge=`<div class="scal-badge sb-off" style="${extra}">/</div>`;
+      else if(v==='leave')badge=`<div class="scal-badge sb-leave">휴직</div>`;
+      else badge=`<div class="scal-badge sb-none">-</div>`;
+    }else{badge=`<div class="scal-badge sb-none">-</div>`;}
+    html+=`<div class="${cls}"><div class="scal-dn ${dnCls}">${d}${holTip}</div>${badge}</div>`;
+  }
+  const rem=(7-((firstWd+days)%7))%7;
+  for(let i=0;i<rem;i++) html+=`<div class="scal-cell empty-cell"></div>`;
+  html+=`</div>`;
+  if(sched){
+    const vals=Array.from({length:days},(_,i)=>sched[i+1]||'');
+    const sN=vals.filter(v=>v==='S').length;
+    const cN=vals.filter(v=>v==='C').length;
+    const oN=vals.filter(v=>v==='/').length;
+    html+=`<div class="scal-stats">
+      <div class="scal-stat"><div class="scal-stat-dot" style="background:#1a4a2e"></div>주간 ${sN}일</div>
+      <div class="scal-stat"><div class="scal-stat-dot" style="background:#7a4500"></div>당직 ${cN}일</div>
+      <div class="scal-stat"><div class="scal-stat-dot" style="background:#2a2825"></div>휴무 ${oN}일</div>
+    </div>`;
+  }
+  document.getElementById('scal-body').innerHTML=html;
+}
+
+function openDayPopupView(d, event){
+  const key=`${viewYear}-${viewMonth}`;
+  if(!savedSchedule[key]||!Object.keys(savedSchedule[key]).length)return;
+  const DAY_KR=['일','월','화','수','목','금','토'];
+  const wd=new Date(viewYear,viewMonth,d).getDay();
+  const hols=getHolidaysForMonth(viewYear,viewMonth);
+  const holMap={};hols.forEach(h=>holMap[h.day]=h.name);
+  const cMembers=staff.filter(s=>savedSchedule[key][s.id]&&savedSchedule[key][s.id][d]==='C');
+  const sMembers=staff.filter(s=>savedSchedule[key][s.id]&&savedSchedule[key][s.id][d]==='S');
+  document.getElementById('popup-title').textContent=`${d}일 (${DAY_KR[wd]})${holMap[d]?' · '+holMap[d]:''}`;
+  document.getElementById('popup-sub').textContent=`당직 ${cMembers.length}명 · 주간 ${sMembers.length}명`;
+  const membersEl=document.getElementById('popup-members');
+  membersEl.innerHTML=cMembers.length===0
+    ?`<div style="color:var(--text3);font-size:11px;padding:4px 0">당직자 없음</div>`
+    :cMembers.map(s=>`<div class="day-popup-member">
+        <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:${RANK_BG[s.rank]};color:${RANK_FG[s.rank]};flex-shrink:0">${s.name[0]}</div>
+        <span>${s.name}</span><span style="margin-left:auto;font-size:13px">🔔</span>
+      </div>`).join('');
+  const overlay=document.getElementById('day-popup-overlay'),box=document.getElementById('day-popup-box');
+  overlay.style.display='block';
+  if(event){
+    const rect=event.currentTarget.getBoundingClientRect();
+    const popW=220,popH=60+cMembers.length*34;
+    let left=rect.left+rect.width/2-popW/2,top=rect.bottom+6;
+    if(left+popW>window.innerWidth-10)left=window.innerWidth-popW-10;
+    if(left<10)left=10;
+    if(top+popH>window.innerHeight-10)top=rect.top-popH-6;
+    box.style.left=left+'px';box.style.top=top+'px';
+  }
+}
+
+/* ═══ 이전달 슬라이딩 패널 ═══ */
+
+
 
 function renderPrevPanel(){
   const prevMonth=curMonth===0?11:curMonth-1;
@@ -4522,6 +5431,80 @@ function renderPrevPanel(){
       <span style="color:var(--amber);font-weight:600">C${cN}</span></td>`;
   });
   html+=`</tr></tbody></table>`;
+  el.innerHTML=html;
+}
+
+/* ═══ 이전달 보기 팝업 ═══ */
+let prevPopupOpen=false;
+
+function togglePrevPopup(){
+  prevPopupOpen=!prevPopupOpen;
+  const popup=document.getElementById('prev-popup');
+  const btn=document.getElementById('prev-popup-btn');
+  if(popup) popup.classList.toggle('open', prevPopupOpen);
+  if(btn){
+    btn.style.background=prevPopupOpen?'var(--accent-light)':'';
+    btn.style.color=prevPopupOpen?'var(--accent-text)':'';
+    btn.style.borderColor=prevPopupOpen?'#b8d9c2':'';
+  }
+  if(prevPopupOpen) renderPrevPopup();
+}
+
+function renderPrevPopup(){
+  const prevMonth=curMonth===0?11:curMonth-1;
+  const prevYear=curMonth===0?curYear-1:curYear;
+  const prevKey=`${prevYear}-${prevMonth}`;
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const DAY_KR=['일','월','화','수','목','금','토'];
+
+  // 제목 업데이트
+  const title=document.getElementById('prev-popup-title');
+  if(title) title.textContent=`${prevYear}년 ${MONTHS[prevMonth]} 마지막 4일`;
+
+  const el=document.getElementById('prev-popup-content');
+  if(!el) return;
+
+  const prevSched=schedule[prevKey];
+  if(!prevSched||!Object.keys(prevSched).length){
+    el.innerHTML=`<div style="padding:16px;text-align:center;font-size:12px;color:var(--text3)">이전달 근무표가 없습니다</div>`;
+    return;
+  }
+
+  const prevDays=getDays(prevYear,prevMonth);
+  const show4=[prevDays-3,prevDays-2,prevDays-1,prevDays];
+  const hols=getHolidaysForMonth(prevYear,prevMonth);
+  const holSet=new Set(hols.map(h=>h.day));
+  function wdP(d){return new Date(prevYear,prevMonth,d).getDay();}
+
+  let html=`<table class="prev-popup-table"><thead><tr>
+    <th class="pp-name">이름</th>`;
+  show4.forEach(d=>{
+    const wd=wdP(d);
+    const cls=wd===6?'pp-sat':wd===0||holSet.has(d)?'pp-sun':'';
+    html+=`<th class="${cls}">${d}일<br><span style="font-size:8px;font-weight:400">${DAY_KR[wd]}</span></th>`;
+  });
+  html+=`</tr></thead><tbody>`;
+
+  staff.forEach(s=>{
+    if(!prevSched[s.id]) return;
+    html+=`<tr><td class="pp-name">${s.name}</td>`;
+    show4.forEach(d=>{
+      const v=(prevSched[s.id]||[])[d]||'';
+      const wd=wdP(d);
+      const tdCls=wd===6?'pp-sat':wd===0||holSet.has(d)?'pp-sun':'';
+      if(v==='leave'){
+        html+=`<td class="${tdCls}"><span style="font-size:9px;color:#5a3d8a;font-weight:700">휴</span></td>`;
+      } else if(v){
+        const btnCls=v==='S'?'cell-S':v==='C'?'cell-C':v==='/'?'cell-off':
+                     v==='공'?'cell-공':v==='연'?'cell-연':v==='반'?'cell-반':'';
+        html+=`<td class="${tdCls}"><button class="cell-btn ${btnCls}" style="cursor:default">${v}</button></td>`;
+      } else {
+        html+=`<td class="${tdCls}"></td>`;
+      }
+    });
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table>`;
   el.innerHTML=html;
 }
 
