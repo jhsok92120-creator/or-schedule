@@ -377,6 +377,21 @@ input[type=checkbox]{width:auto}
   .duty-member-chip{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--amber-light);color:var(--amber);border:1px solid #e8d4a0}
   .duty-empty{color:var(--text3);font-size:12px;font-style:italic}
   .duty-modal-footer{padding:10px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+  /* 저장 내역 사이드바 */
+  .save-sidebar{position:fixed;top:0;right:0;bottom:0;width:240px;background:var(--surface);border-left:1px solid var(--border);z-index:150;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 16px rgba(0,0,0,.08)}
+  .save-sidebar.open{transform:translateX(0)}
+  .save-sidebar-hdr{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .save-sidebar-title{font-size:14px;font-weight:700;flex:1}
+  .save-sidebar-close{border:none;background:none;font-size:16px;cursor:pointer;color:var(--text3);padding:2px 6px;border-radius:4px}
+  .save-sidebar-close:hover{background:var(--surface2)}
+  .save-sidebar-body{flex:1;overflow-y:auto;padding:10px}
+  .save-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px}
+  .save-item-title{font-size:13px;font-weight:700;margin-bottom:3px;color:var(--text)}
+  .save-item-time{font-size:11px;color:var(--text3);margin-bottom:8px}
+  .save-item-btns{display:flex;gap:6px}
+  .save-sidebar-toggle{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:151;background:var(--surface);border:1px solid var(--border2);border-right:none;border-radius:6px 0 0 6px;padding:10px 6px;cursor:pointer;font-size:11px;writing-mode:vertical-rl;color:var(--text2);box-shadow:-2px 0 8px rgba(0,0,0,.06);transition:right .25s}
+  .save-sidebar-toggle:hover{background:var(--surface2)}
+  .save-sidebar.open~.save-sidebar-toggle{right:240px}
 </style>
 </head>
 <body>
@@ -626,8 +641,17 @@ input[type=checkbox]{width:auto}
     </div>
     <div style="flex:1"></div>
     <div class="topbar-actions">
+      <button class="btn" id="undo-btn" onclick="undoSchedule()" style="display:none">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>이전 생성
+      </button>
       <button class="btn btn-primary" onclick="generateSchedule()">
         <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>자동 생성
+      </button>
+      <button class="btn" onclick="newSchedule()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>신규
+      </button>
+      <button class="btn" onclick="saveSnapshot()" style="border-color:#1a56b0;color:#1a56b0">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>저장
       </button>
       <button class="btn btn-primary" onclick="saveToView()" style="background:#1a56b0;border-color:#1a56b0">
         <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>부서원에 저장
@@ -800,7 +824,8 @@ let userHolidays={};
 let leaveRecords=[]; let leaveNextId=1;
 let groupRules=[]; let groupNextId=1;
 let requests={};
-let savedSchedule={};  // 부서원에게 저장된 근무표
+let savedSchedule={};
+let scheduleHistory={};  // 이전 생성 기록 (key별 1단계)  // 부서원에게 저장된 근무표
 let viewYear=new Date().getFullYear();
 let viewMonth=new Date().getMonth();
 let schedule={};
@@ -1293,6 +1318,13 @@ function renderLeavePage(){
 function changeMonth(dir){curMonth+=dir;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}renderSchedule();}
 
 function generateSchedule(){
+  // 현재 근무표를 히스토리에 저장 (이전생성 복원용)
+  const _key=`${curYear}-${curMonth}`;
+  if(schedule[_key]&&Object.keys(schedule[_key]).length>0){
+    scheduleHistory[_key]=JSON.parse(JSON.stringify(schedule[_key]));
+    const undoBtn=document.getElementById('undo-btn');
+    if(undoBtn) undoBtn.style.display='inline-flex';
+  }
   const days=getDays();
   const cGap=2; // C 간격 2일
   const FIXED_C=3;
@@ -1560,6 +1592,111 @@ function generateSchedule(){
     if(warnings.length>6)lines.push('...외 '+(warnings.length-6)+'건');
     showNotice('warn',lines.join('<br>'));
   }else{showNotice('success','✓ 근무표 생성 완료 — 모든 C 간격 2일 이상 충족');}
+}
+
+function undoSchedule(){
+  const key=`${curYear}-${curMonth}`;
+  if(!scheduleHistory[key]){alert('이전 생성 기록이 없습니다.');return;}
+  if(!confirm('이전 생성으로 되돌리시겠습니까?'))return;
+  schedule[key]=JSON.parse(JSON.stringify(scheduleHistory[key]));
+  delete scheduleHistory[key];
+  const undoBtn=document.getElementById('undo-btn');
+  if(undoBtn) undoBtn.style.display='none';
+  renderSchedule();
+  saveToLS();
+  showNotice('success','✓ 이전 생성으로 복원되었습니다');
+}
+
+/* ═══ 저장 내역 ═══ */
+let snapshots=[];  // [{id, title, time, year, month, data}]
+let snapshotNextId=1;
+
+function toggleSaveSidebar(){
+  const sb=document.getElementById('save-sidebar');
+  sb.classList.toggle('open');
+  renderSnapshotList();
+}
+
+function saveSnapshot(){
+  const key=`${curYear}-${curMonth}`;
+  if(!schedule[key]||!Object.keys(schedule[key]).length){
+    alert('근무표를 먼저 생성해주세요.');return;
+  }
+  const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const now=new Date();
+  const timeStr=`${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const existCount=snapshots.filter(s=>s.year===curYear&&s.month===curMonth).length;
+  snapshots.push({
+    id:snapshotNextId++,
+    title:`${curYear}년 ${MONTHS[curMonth]} v${existCount+1}`,
+    time:timeStr,
+    year:curYear,
+    month:curMonth,
+    data:JSON.parse(JSON.stringify(schedule[key]))
+  });
+  saveToLS();
+  renderSnapshotList();
+  // 사이드바 열기
+  document.getElementById('save-sidebar').classList.add('open');
+  showNotice('success','✓ 저장되었습니다!');
+}
+
+function loadSnapshot(id){
+  const snap=snapshots.find(s=>s.id===id);
+  if(!snap)return;
+  if(!confirm(`"${snap.title}" 을 불러오시겠습니까? 현재 근무표는 덮어씌워집니다.`))return;
+  const key=`${snap.year}-${snap.month}`;
+  // 현재 상태 히스토리에 저장
+  if(schedule[key]&&Object.keys(schedule[key]).length>0){
+    scheduleHistory[key]=JSON.parse(JSON.stringify(schedule[key]));
+    const undoBtn=document.getElementById('undo-btn');
+    if(undoBtn)undoBtn.style.display='inline-flex';
+  }
+  curYear=snap.year; curMonth=snap.month;
+  schedule[key]=JSON.parse(JSON.stringify(snap.data));
+  saveToLS();
+  renderSchedule();
+  showNotice('success',`✓ "${snap.title}" 불러오기 완료`);
+}
+
+function deleteSnapshot(id){
+  const snap=snapshots.find(s=>s.id===id);
+  if(!snap)return;
+  if(!confirm(`"${snap.title}" 을 삭제하시겠습니까?`))return;
+  snapshots=snapshots.filter(s=>s.id!==id);
+  saveToLS();
+  renderSnapshotList();
+}
+
+function renderSnapshotList(){
+  const body=document.getElementById('save-sidebar-body');
+  if(!body)return;
+  if(!snapshots.length){
+    body.innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">저장된 내역이 없습니다</div>';
+    return;
+  }
+  // 최신순 정렬
+  const sorted=[...snapshots].reverse();
+  body.innerHTML=sorted.map(s=>`
+    <div class="save-item">
+      <div class="save-item-title">${s.title}</div>
+      <div class="save-item-time">저장: ${s.time}</div>
+      <div class="save-item-btns">
+        <button class="btn btn-sm btn-primary" onclick="loadSnapshot(${s.id})" style="font-size:11px;padding:3px 10px">불러오기</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteSnapshot(${s.id})" style="font-size:11px;padding:3px 10px">삭제</button>
+      </div>
+    </div>`).join('');
+}
+
+function newSchedule(){
+  if(!confirm('현재 근무표를 초기화하시겠습니까? (저장된 내역은 유지됩니다)'))return;
+  const key=`${curYear}-${curMonth}`;
+  schedule[key]={};
+  const undoBtn=document.getElementById('undo-btn');
+  if(undoBtn)undoBtn.style.display='none';
+  renderSchedule();
+  saveToLS();
+  showNotice('success','✓ 근무표가 초기화되었습니다');
 }
 
 function showNotice(type,msg){
@@ -2383,6 +2520,8 @@ function saveToLS(){
       lockPassword,
       curYear,curMonth,
       viewYear,viewMonth,
+      snapshots,
+      snapshotNextId,
     };
     localStorage.setItem(LS_KEY, JSON.stringify(data));
   }catch(e){console.warn('저장 실패:', e);}
@@ -2408,6 +2547,8 @@ function loadFromLS(){
     if(data.curMonth!==undefined)curMonth=data.curMonth;
     if(data.viewYear)viewYear=data.viewYear;
     if(data.viewMonth!==undefined)viewMonth=data.viewMonth;
+    if(data.snapshots)snapshots=data.snapshots;
+    if(data.snapshotNextId)snapshotNextId=data.snapshotNextId;
   }catch(e){console.warn('불러오기 실패:', e);}
 }
 
@@ -2443,6 +2584,18 @@ if(localStorage.getItem('orschedule_version')!==APP_VERSION){
 renderStaff();
 renderSchedule();
 </script>
+<!-- 저장 내역 사이드바 -->
+<div class="save-sidebar" id="save-sidebar">
+  <div class="save-sidebar-hdr">
+    <div class="save-sidebar-title">📁 저장 내역</div>
+    <button class="save-sidebar-close" onclick="toggleSaveSidebar()">✕</button>
+  </div>
+  <div class="save-sidebar-body" id="save-sidebar-body">
+    <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">저장된 내역이 없습니다</div>
+  </div>
+</div>
+<button class="save-sidebar-toggle" id="save-sidebar-toggle" onclick="toggleSaveSidebar()">저장 내역</button>
+
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load', ()=>{
